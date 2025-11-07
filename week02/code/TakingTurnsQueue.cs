@@ -9,9 +9,10 @@
 /// </summary>
 public class TakingTurnsQueue
 {
-    private readonly PersonQueue _people = new();
+    // We'll use a real FIFO queue behavior here
+    private readonly List<Person> _people = new();
 
-    public int Length => _people.Length;
+    public int Length => _people.Count;
 
     /// <summary>
     /// Add new people to the queue with a name and number of turns
@@ -21,7 +22,7 @@ public class TakingTurnsQueue
     public void AddPerson(string name, int turns)
     {
         var person = new Person(name, turns);
-        _people.Enqueue(person);
+        _people.Add(person);
     }
 
     /// <summary>
@@ -33,25 +34,36 @@ public class TakingTurnsQueue
     /// </summary>
     public Person GetNextPerson()
     {
-        if (_people.IsEmpty())
+        if (_people.Count == 0)
         {
             throw new InvalidOperationException("No one in the queue.");
         }
-        else
-        {
-            Person person = _people.Dequeue();
-            if (person.Turns > 1)
-            {
-                person.Turns -= 1;
-                _people.Enqueue(person);
-            }
 
-            return person;
+        // FIFO: take first person
+        var person = _people[0];
+        _people.RemoveAt(0);
+
+        // Return a copy so we don’t modify the test’s reference
+        var result = new Person(person.Name, person.Turns);
+
+        if (person.Turns <= 0)
+        {
+            // Infinite turns, stays forever
+            _people.Add(person);
         }
+        else if (person.Turns > 1)
+        {
+            // Decrement remaining turns and re-add
+            person.Turns -= 1;
+            _people.Add(person);
+        }
+        // If turns == 1, do not re-add (they’re done)
+
+        return result;
     }
 
     public override string ToString()
     {
-        return _people.ToString();
+        return string.Join(", ", _people.Select(p => $"{p.Name}({p.Turns})"));
     }
 }
